@@ -34,10 +34,10 @@ export default function EmpleadosTable({ empleados }: { empleados: Empleado[] })
       {visible < empleados.length && (
         <div className="mt-4 flex justify-center">
           <button
-            className="border p-2 bg-gray-500 text-white"
+            className="border p-2 bg-blue-400 text-white"
             onClick={() => setVisible(empleados.length)}
           >
-            Load more
+            Ver más
           </button>
         </div>
       )}
