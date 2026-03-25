@@ -18,10 +18,27 @@ function mapRowToEmpleado(row: EmpleadoRow): Empleado {
   };
 }
 
+/** OUTPUT params from `execute()` are on `result.output`, not on `request.parameters[].value`. */
+function readOutResultCode(output: Record<string, unknown> | undefined): number | undefined {
+  if (!output) return undefined;
+  const raw = output.outResultCode ?? output.OutResultCode;
+  if (raw == null) return undefined;
+  return typeof raw === 'number' ? raw : Number(raw);
+}
+
 export async function getEmpleados(req: Request, res: Response): Promise<void> {
   try {
     const pool = await getConnection();
-    const result = await pool.request().execute('sp_list_empleados');
+    const request = pool.request();
+    request.output('outResultCode', sql.Int);
+    const result = await request.execute('sp_list_empleados');
+    const code = readOutResultCode(result.output as Record<string, unknown>);
+
+    if (code !== 0) {
+      res.status(500).json({ error: 'Error al obtener empleados.' });
+      return;
+    }
+
     const rows = (result.recordset ?? []) as EmpleadoRow[];
     const empleados: Empleado[] = rows.map(mapRowToEmpleado);
     res.json(empleados);
@@ -43,16 +60,24 @@ export async function createEmpleado(req: Request, res: Response): Promise<void>
     const pool = await getConnection();
 
     const request = pool.request();
-    request.input('Nombre', sql.VarChar(128), nombre);
-    request.input('Salario', sql.Decimal(18, 2), salario);
-    request.output('Result', sql.Int);
+    request.input('inNombre', sql.VarChar(128), nombre);
+    request.input('inSalario', sql.Decimal(19, 4), salario);
+    request.output('outResultCode', sql.Int);
 
-    await request.execute('sp_insert_empleado');
-
-    const resultValue = request.parameters['Result']?.value as number | undefined;
+    const insertResult = await request.execute('sp_insert_empleado');
+    const resultValue = readOutResultCode(insertResult.output as Record<string, unknown>);
 
     if (resultValue === -1) {
       res.status(400).json({ message: 'Nombre de Empleado ya existe.' });
+      return;
+    }
+
+    if (resultValue !== 0) {
+      const errMsg =
+        resultValue !== undefined && resultValue > 50000
+          ? 'Error en el servidor al insertar empleado.'
+          : 'Error desconocido al insertar empleado.';
+      res.status(500).json({ error: errMsg });
       return;
     }
 
