@@ -1,3 +1,5 @@
+import EmpleadosTable from './components/EmpleadosTable';
+
 interface Empleado {
   id: number;
   nombre: string;
@@ -30,24 +32,7 @@ export default async function Home() {
         {error ? (
           <p className="text-red-500">{error}</p>
         ) : (
-          <table className="border border-collapse">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border px-4 py-2">id</th>
-                <th className="border px-4 py-2">Nombre</th>
-                <th className="border px-4 py-2">Salario</th>
-              </tr>
-            </thead>
-            <tbody>
-              {empleados.map((empleado) => (
-                <tr key={empleado.id}>
-                  <td className="border px-4 py-2 text-center">{empleado.id}</td>
-                  <td className="border px-4 py-2">{empleado.nombre}</td>
-                  <td className="border px-4 py-2 text-right">{empleado.salario}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <EmpleadosTable empleados={empleados} />
         )}
       </div>
 
